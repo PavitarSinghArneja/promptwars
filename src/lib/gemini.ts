@@ -1,29 +1,22 @@
 /**
- * Aegis Bridge — Gemini Client (server-side only)
- * Wraps @google/generative-ai for multimodal triage inference.
- * All API calls MUST stay server-side — key never exposed to client.
+ * Aegis Bridge — Gemini Client via Vertex AI (server-side only)
+ * Uses @google-cloud/vertexai which authenticates via GCP Application Default
+ * Credentials (ADC) on Cloud Run — no API key needed, uses project billing.
  */
-import {
-  GoogleGenerativeAI,
-  HarmCategory,
-  HarmBlockThreshold,
-  type Part,
-} from "@google/generative-ai";
+import { VertexAI, type Part, HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 import type { TriageOutput } from "./triageSchema";
 
-// Key validated at call-time (not module load) so Next.js build doesn't crash
-function getGenAI(): GoogleGenerativeAI {
-  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GOOGLE_GEMINI_API_KEY is not set.");
-  return new GoogleGenerativeAI(apiKey);
-}
-
+const PROJECT = process.env.GOOGLE_CLOUD_PROJECT_ID ?? "sodium-sublime-490805-t9";
+const LOCATION = process.env.GOOGLE_CLOUD_REGION ?? "us-central1";
 const MODEL_ID = "gemini-2.0-flash";
 
-/** Safety settings — allow medical content while blocking truly harmful output */
+function getVertex(): VertexAI {
+  return new VertexAI({ project: PROJECT, location: LOCATION });
+}
+
 const safetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT,        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,       threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
   { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
   { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
 ];
@@ -71,30 +64,31 @@ export interface GeminiTriageInput {
 }
 
 /**
- * Run multimodal triage inference via Gemini 2.0 Flash.
- * Throws on API error; caller handles HTTP response.
+ * Run multimodal triage inference via Vertex AI Gemini 2.0 Flash.
+ * Uses GCP ADC on Cloud Run — no API key required.
  */
 export async function runTriageInference(input: GeminiTriageInput): Promise<TriageOutput> {
-  const model = getGenAI().getGenerativeModel({
+  const vertex = getVertex();
+  const model = vertex.getGenerativeModel({
     model: MODEL_ID,
-    systemInstruction: SYSTEM_PROMPT,
     safetySettings,
     generationConfig: {
-      temperature: 0.1,       // Low temperature for deterministic medical output
+      temperature: 0.1,
       topP: 0.8,
       maxOutputTokens: 2048,
     },
+    systemInstruction: {
+      role: "system",
+      parts: [{ text: SYSTEM_PROMPT }],
+    },
   });
 
-  // Build multimodal parts array
   const parts: Part[] = [];
 
-  // Text preamble
   parts.push({
     text: `Emergency triage request received at ${new Date().toISOString()}. Analyse all provided inputs and return the JSON triage report.`,
   });
 
-  // Image parts
   for (const img of input.images) {
     parts.push({
       inlineData: {
@@ -105,7 +99,6 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
     parts.push({ text: `Image file: ${img.name}` });
   }
 
-  // Audio part (if present)
   if (input.audio) {
     parts.push({
       inlineData: {
@@ -113,10 +106,9 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
         mimeType: input.audio.mimeType as "audio/webm" | "audio/ogg",
       },
     });
-    parts.push({ text: `Audio recording duration: ${input.audio.durationSec}s. Please transcribe and use as eyewitness/victim description.` });
+    parts.push({ text: `Audio recording duration: ${input.audio.durationSec}s. Transcribe and use as eyewitness/victim description.` });
   }
 
-  // Free-text notes
   if (input.notes) {
     parts.push({ text: `Additional notes from responder:\n${input.notes}` });
   }
@@ -124,9 +116,8 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
   parts.push({ text: "Return the JSON triage report now:" });
 
   const result = await model.generateContent({ contents: [{ role: "user", parts }] });
-  const rawText = result.response.text().trim();
+  const rawText = result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
 
-  // Strip markdown fences if model wraps output despite instructions
   const jsonText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 
   let parsed: TriageOutput;
@@ -136,7 +127,6 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
     throw new Error(`Gemini returned non-JSON output: ${rawText.slice(0, 200)}`);
   }
 
-  // Ensure processedAt is set
   if (!parsed.processedAt) {
     parsed.processedAt = new Date().toISOString();
   }
