@@ -1,25 +1,28 @@
 /**
- * Aegis Bridge — Gemini Client via Vertex AI (server-side only)
- * Uses @google-cloud/vertexai which authenticates via GCP Application Default
- * Credentials (ADC) on Cloud Run — no API key needed, uses project billing.
+ * Aegis Bridge — Gemini Client via Google Gen AI SDK (Vertex AI backend)
+ * Uses @google/genai with vertexai:true — authenticates via GCP ADC on Cloud Run.
+ * No API key needed in production; falls back to API key for local dev.
  */
-import { VertexAI, type Part, HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
+import { GoogleGenAI, type Part } from "@google/genai";
 import type { TriageOutput } from "./triageSchema";
 
-const PROJECT = process.env.GOOGLE_CLOUD_PROJECT_ID ?? "sodium-sublime-490805-t9";
-const LOCATION = process.env.GOOGLE_CLOUD_REGION ?? "us-central1";
-const MODEL_ID = "gemini-2.0-flash";
+const PROJECT  = process.env.GOOGLE_CLOUD_PROJECT_ID ?? "sodium-sublime-490805-t9";
+const LOCATION = process.env.GOOGLE_CLOUD_REGION    ?? "us-central1";
 
-function getVertex(): VertexAI {
-  return new VertexAI({ project: PROJECT, location: LOCATION });
+// Vertex AI on Cloud Run (ADC) — no API key needed
+// For local dev, set GOOGLE_GEMINI_API_KEY and the SDK uses AI Studio
+function getAI(): GoogleGenAI {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+  // If running on Cloud Run (no API key set or key is placeholder), use Vertex AI
+  if (!apiKey || apiKey === "placeholder") {
+    return new GoogleGenAI({ vertexai: true, project: PROJECT, location: LOCATION });
+  }
+  // Local dev: use AI Studio key
+  return new GoogleGenAI({ apiKey });
 }
 
-const safetySettings = [
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT,        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,       threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-];
+// Vertex AI model ID (versioned)
+const MODEL_ID = "gemini-2.0-flash-001";
 
 const SYSTEM_PROMPT = `You are Aegis Bridge, an expert emergency medical triage AI assistant.
 Your job is to analyse multimodal emergency inputs (images, audio transcripts, text) and produce a structured JSON triage report.
@@ -63,25 +66,8 @@ export interface GeminiTriageInput {
   notes: string;
 }
 
-/**
- * Run multimodal triage inference via Vertex AI Gemini 2.0 Flash.
- * Uses GCP ADC on Cloud Run — no API key required.
- */
 export async function runTriageInference(input: GeminiTriageInput): Promise<TriageOutput> {
-  const vertex = getVertex();
-  const model = vertex.getGenerativeModel({
-    model: MODEL_ID,
-    safetySettings,
-    generationConfig: {
-      temperature: 0.1,
-      topP: 0.8,
-      maxOutputTokens: 2048,
-    },
-    systemInstruction: {
-      role: "system",
-      parts: [{ text: SYSTEM_PROMPT }],
-    },
-  });
+  const ai = getAI();
 
   const parts: Part[] = [];
 
@@ -93,7 +79,7 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
     parts.push({
       inlineData: {
         data: img.base64,
-        mimeType: img.mimeType as "image/jpeg" | "image/png" | "image/webp" | "image/gif",
+        mimeType: img.mimeType,
       },
     });
     parts.push({ text: `Image file: ${img.name}` });
@@ -103,28 +89,38 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
     parts.push({
       inlineData: {
         data: input.audio.base64,
-        mimeType: input.audio.mimeType as "audio/webm" | "audio/ogg",
+        mimeType: input.audio.mimeType,
       },
     });
-    parts.push({ text: `Audio recording duration: ${input.audio.durationSec}s. Transcribe and use as eyewitness/victim description.` });
+    parts.push({ text: `Audio recording: ${input.audio.durationSec}s. Transcribe and use as eyewitness/victim description.` });
   }
 
   if (input.notes) {
-    parts.push({ text: `Additional notes from responder:\n${input.notes}` });
+    parts.push({ text: `Additional notes:\n${input.notes}` });
   }
 
   parts.push({ text: "Return the JSON triage report now:" });
 
-  const result = await model.generateContent({ contents: [{ role: "user", parts }] });
-  const rawText = result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+  const response = await ai.models.generateContent({
+    model: MODEL_ID,
+    contents: [{ role: "user", parts }],
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      temperature: 0.1,
+      topP: 0.8,
+      maxOutputTokens: 2048,
+    },
+  });
 
+  // `text` is a getter property in @google/genai (not a function)
+  const rawText = (response.text ?? "").trim();
   const jsonText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
 
   let parsed: TriageOutput;
   try {
     parsed = JSON.parse(jsonText);
   } catch {
-    throw new Error(`Gemini returned non-JSON output: ${rawText.slice(0, 200)}`);
+    throw new Error(`Gemini returned non-JSON: ${rawText.slice(0, 200)}`);
   }
 
   if (!parsed.processedAt) {
