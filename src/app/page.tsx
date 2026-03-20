@@ -1,8 +1,13 @@
+"use client";
+
 /**
  * Aegis Bridge — Home / Triage Page
- * Landing hero + placeholder sections for modules 2–6
+ * Landing hero + multi-modal triage workspace + results display
  */
-import { ShieldAlert, Mic, Image as ImageIcon, FileText, MapPin, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { ShieldAlert, Mic, ImageIcon, FileText, MapPin, ArrowRight } from "lucide-react";
+import TriageWorkspace from "@/components/TriageWorkspace";
+import type { TriageOutput } from "@/lib/triageSchema";
 
 const features = [
   {
@@ -32,12 +37,14 @@ const features = [
 ];
 
 export default function Home() {
+  const [triageResult, setTriageResult] = useState<TriageOutput | null>(null);
+
   return (
     <>
       {/* ── Hero Section ───────────────────────────────────────── */}
       <section
         aria-labelledby="hero-heading"
-        className="relative flex flex-col items-center justify-center text-center px-4 py-24 sm:py-32 overflow-hidden"
+        className="relative flex flex-col items-center justify-center text-center px-4 py-20 sm:py-28 overflow-hidden"
       >
         {/* Decorative background glow */}
         <div
@@ -54,14 +61,10 @@ export default function Home() {
           className="mb-6 flex items-center justify-center w-20 h-20 rounded-2xl glass"
           aria-hidden="true"
         >
-          <ShieldAlert
-            size={40}
-            strokeWidth={2}
-            style={{ color: "var(--color-critical)" }}
-          />
+          <ShieldAlert size={40} strokeWidth={2} style={{ color: "var(--color-critical)" }} />
         </div>
 
-        {/* Triage level indicator pill */}
+        {/* Status pill */}
         <div
           className="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider"
           role="status"
@@ -78,17 +81,14 @@ export default function Home() {
 
         <h1
           id="hero-heading"
-          className="text-4xl sm:text-5xl lg:text-6xl font-800 tracking-tight max-w-3xl"
+          className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight max-w-3xl"
           style={{ color: "var(--color-text-primary)", lineHeight: 1.1 }}
         >
           Precision in{" "}
           <span style={{ color: "var(--color-critical)" }}>Chaos</span>
         </h1>
 
-        <p
-          className="mt-6 text-lg sm:text-xl max-w-2xl"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
+        <p className="mt-6 text-lg sm:text-xl max-w-2xl" style={{ color: "var(--color-text-secondary)" }}>
           Aegis Bridge converts messy real-world inputs — voice, photos, medical notes —
           into structured, life-saving emergency actions. Powered by{" "}
           <strong style={{ color: "var(--color-text-primary)" }}>Vertex AI Gemini 2.0 Flash</strong>.
@@ -97,16 +97,16 @@ export default function Home() {
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
           <a
             href="#triage"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold transition-all hover:opacity-90 active:scale-95 focus-visible:outline-offset-4"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold transition-all hover:opacity-90 active:scale-95"
             style={{ background: "var(--color-critical)", color: "#fff" }}
-            aria-label="Start emergency triage"
+            aria-label="Jump to triage workspace"
           >
             Start Triage
             <ArrowRight size={18} aria-hidden="true" />
           </a>
           <a
             href="#hospital-map"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold transition-all hover:bg-white/10 focus-visible:outline-offset-4 glass"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-base font-semibold transition-all hover:bg-white/10 glass"
             style={{ color: "var(--color-text-primary)" }}
             aria-label="Find nearest hospital"
           >
@@ -117,25 +117,16 @@ export default function Home() {
       </section>
 
       {/* ── Feature Cards ──────────────────────────────────────── */}
-      <section
-        id="features"
-        aria-labelledby="features-heading"
-        className="px-4 py-16 sm:px-6 lg:px-8"
-      >
+      <section id="features" aria-labelledby="features-heading" className="px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <h2
             id="features-heading"
-            className="text-2xl font-700 text-center mb-12"
+            className="text-2xl font-bold text-center mb-10"
             style={{ color: "var(--color-text-primary)" }}
           >
             Zero Cognitive Load When It Matters Most
           </h2>
-
-          <div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-            role="list"
-            aria-label="Key features"
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" role="list" aria-label="Key features">
             {features.map(({ icon: Icon, title, description, color }) => (
               <article
                 key={title}
@@ -161,48 +152,48 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Triage Workspace (placeholder for Module 2–4) ─────── */}
-      <section
-        id="triage"
-        aria-labelledby="triage-heading"
-        className="px-4 py-16 sm:px-6 lg:px-8"
-      >
-        <div className="mx-auto max-w-5xl">
+      {/* ── Triage Workspace ───────────────────────────────────── */}
+      <section id="triage" aria-labelledby="triage-heading" className="px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl">
           <h2
             id="triage-heading"
-            className="text-2xl font-700 mb-8"
+            className="text-2xl font-bold mb-8"
             style={{ color: "var(--color-text-primary)" }}
           >
             Triage Workspace
           </h2>
-          <div
-            className="glass p-12 flex flex-col items-center justify-center text-center gap-4 min-h-64"
-            aria-label="Triage input area — coming in Module 2"
-          >
-            <p className="text-base" style={{ color: "var(--color-text-muted)" }}>
-              Multi-modal input engine loads here (Module 2)
-            </p>
+          <div className="glass p-6 sm:p-8">
+            <TriageWorkspace onResult={setTriageResult} />
           </div>
+
+          {/* Results placeholder — populated by Module 4 */}
+          {triageResult && (
+            <div
+              role="status"
+              aria-live="polite"
+              aria-label="Triage result received"
+              className="mt-6 glass p-4 text-sm"
+              style={{ color: "var(--color-minor)" }}
+            >
+              ✓ Triage complete — triage level: {triageResult.triageLevel}. Output card renders below (Module 4).
+            </div>
+          )}
         </div>
       </section>
 
-      {/* ── Hospital Map (placeholder for Module 5) ───────────── */}
-      <section
-        id="hospital-map"
-        aria-labelledby="map-heading"
-        className="px-4 py-16 sm:px-6 lg:px-8"
-      >
+      {/* ── Hospital Map placeholder ───────────────────────────── */}
+      <section id="hospital-map" aria-labelledby="map-heading" className="px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <h2
             id="map-heading"
-            className="text-2xl font-700 mb-8"
+            className="text-2xl font-bold mb-8"
             style={{ color: "var(--color-text-primary)" }}
           >
             Hospital Routing
           </h2>
           <div
             className="glass p-12 flex flex-col items-center justify-center text-center gap-4 min-h-64"
-            aria-label="Hospital map — coming in Module 5"
+            aria-label="Hospital map — loading in Module 5"
           >
             <MapPin size={32} style={{ color: "var(--color-text-muted)" }} aria-hidden="true" />
             <p className="text-base" style={{ color: "var(--color-text-muted)" }}>
