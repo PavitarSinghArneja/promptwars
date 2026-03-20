@@ -6,6 +6,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import { AuthProvider } from "@/lib/firebase/AuthContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,6 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <body className="min-h-full flex flex-col bg-mesh" style={{ backgroundColor: "var(--color-surface-950)" }}>
+        <AuthProvider>
         {/* Skip navigation — a11y: keyboard-first users bypass nav */}
         <a href="#main-content" className="skip-nav">
           Skip to main content
@@ -66,6 +68,7 @@ export default function RootLayout({
             &amp; Firebase &bull; &copy; {new Date().getFullYear()}
           </p>
         </footer>
+        </AuthProvider>
       </body>
     </html>
   );

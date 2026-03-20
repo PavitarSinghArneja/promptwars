@@ -11,6 +11,8 @@ import DropZone, { type UploadedFile } from "./DropZone";
 import AudioRecorder, { type AudioRecording } from "./AudioRecorder";
 import TextInput from "./TextInput";
 import type { TriageOutput } from "@/lib/triageSchema";
+import { useAuth } from "@/lib/firebase/AuthContext";
+import { saveTriageReport } from "@/lib/firebase/firestoreService";
 
 interface TriageWorkspaceProps {
   onResult: (result: TriageOutput) => void;
@@ -22,6 +24,7 @@ export default function TriageWorkspace({ onResult }: TriageWorkspaceProps) {
   const [notes, setNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const hasInput = images.length > 0 || audio !== null || notes.trim().length > 0;
 
@@ -56,6 +59,14 @@ export default function TriageWorkspace({ onResult }: TriageWorkspaceProps) {
 
       const data: TriageOutput = await res.json();
       onResult(data);
+
+      // Auto-save to Firestore if user is authenticated
+      if (user?.uid) {
+        saveTriageReport(data, user.uid).catch((err) => {
+          // Non-blocking — don't surface storage failures to the user
+          console.warn("[Firestore] Failed to save triage report:", err);
+        });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unexpected error. Please try again.";
       setApiError(message);
