@@ -22,7 +22,7 @@ function getAI(): GoogleGenAI {
 }
 
 // Vertex AI model ID (versioned)
-const MODEL_ID = "gemini-2.0-flash-001";
+const MODEL_ID = "gemini-2.5-flash";
 
 const SYSTEM_PROMPT = `You are Aegis Bridge, an expert emergency medical triage AI assistant.
 Your job is to analyse multimodal emergency inputs (images, audio transcripts, text) and produce a structured JSON triage report.
