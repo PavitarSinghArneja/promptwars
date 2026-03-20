@@ -11,13 +11,12 @@ import {
 } from "@google/generative-ai";
 import type { TriageOutput } from "./triageSchema";
 
-// Validate key at module load (server only)
-const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-if (!apiKey) {
-  throw new Error("GOOGLE_GEMINI_API_KEY is not set. Add it to .env.local.");
+// Key validated at call-time (not module load) so Next.js build doesn't crash
+function getGenAI(): GoogleGenerativeAI {
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GOOGLE_GEMINI_API_KEY is not set.");
+  return new GoogleGenerativeAI(apiKey);
 }
-
-const genAI = new GoogleGenerativeAI(apiKey);
 
 const MODEL_ID = "gemini-2.0-flash";
 
@@ -76,7 +75,7 @@ export interface GeminiTriageInput {
  * Throws on API error; caller handles HTTP response.
  */
 export async function runTriageInference(input: GeminiTriageInput): Promise<TriageOutput> {
-  const model = genAI.getGenerativeModel({
+  const model = getGenAI().getGenerativeModel({
     model: MODEL_ID,
     systemInstruction: SYSTEM_PROMPT,
     safetySettings,

@@ -1,6 +1,7 @@
 /**
  * Aegis Bridge — Firestore Service
  * Write and read triage reports. Authenticated users only.
+ * No-ops gracefully when Firestore is not configured.
  */
 import {
   collection,
@@ -24,14 +25,11 @@ export interface TriageRecord extends TriageOutput {
 
 const COLLECTION = "triageReports";
 
-/**
- * Save a triage report to Firestore.
- * Returns the document ID on success.
- */
 export async function saveTriageReport(
   data: TriageOutput,
   responderId: string
 ): Promise<string> {
+  if (!db) return "";
   const docRef = await addDoc(collection(db, COLLECTION), {
     ...data,
     responderId,
@@ -40,13 +38,11 @@ export async function saveTriageReport(
   return docRef.id;
 }
 
-/**
- * Fetch the last N triage reports for a responder.
- */
 export async function getTriageHistory(
   responderId: string,
   limitCount = 10
 ): Promise<TriageRecord[]> {
+  if (!db) return [];
   const q = query(
     collection(db, COLLECTION),
     where("responderId", "==", responderId),

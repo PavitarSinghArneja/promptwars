@@ -3,6 +3,7 @@
 /**
  * Aegis Bridge — Firebase Auth Context
  * Provides current user state throughout the app.
+ * Gracefully no-ops when Firebase is not yet configured.
  */
 import {
   createContext,
@@ -17,7 +18,7 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { auth, googleProvider } from "./client";
+import { auth, googleProvider, isConfigured } from "./client";
 
 interface AuthContextValue {
   user: User | null;
@@ -28,16 +29,20 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
-  loading: true,
+  loading: false,
   signInWithGoogle: async () => {},
   signOutUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isConfigured);
 
   useEffect(() => {
+    if (!isConfigured || !auth) {
+      setLoading(false);
+      return;
+    }
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
@@ -46,10 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
+    if (!isConfigured || !auth) return;
     await signInWithPopup(auth, googleProvider);
   };
 
   const signOutUser = async () => {
+    if (!isConfigured || !auth) return;
     await signOut(auth);
   };
 
