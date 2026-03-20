@@ -114,13 +114,21 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
 
   // `text` is a getter property in @google/genai (not a function)
   const rawText = (response.text ?? "").trim();
-  const jsonText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+
+  // Robustly extract JSON: find first { and last } regardless of surrounding
+  // prose or markdown fences Gemini may prepend/append.
+  const start = rawText.indexOf("{");
+  const end = rawText.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error(`Gemini returned no JSON object: ${rawText.slice(0, 300)}`);
+  }
+  const jsonText = rawText.slice(start, end + 1);
 
   let parsed: TriageOutput;
   try {
     parsed = JSON.parse(jsonText);
   } catch {
-    throw new Error(`Gemini returned non-JSON: ${rawText.slice(0, 200)}`);
+    throw new Error(`Gemini JSON parse failed: ${jsonText.slice(0, 300)}`);
   }
 
   if (!parsed.processedAt) {

@@ -147,15 +147,13 @@ export default function VoiceGuardian({ onResult }: VoiceGuardianProps) {
       } catch { /* proceed without Drive file */ }
     }
 
-    // Submit to /api/triage
+    // Submit to /api/triage (must be JSON — route only accepts application/json)
     try {
-      const body = new FormData();
-      body.append("notes", text);
-      if (images.length > 0) {
-        body.append("imagesJson", JSON.stringify(images));
-      }
-
-      const res = await fetch("/api/triage", { method: "POST", body });
+      const res = await fetch("/api/triage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: text, images, audio: null }),
+      });
       const data = await res.json() as TriageOutput & { error?: string };
 
       if (!res.ok || data.error) {
