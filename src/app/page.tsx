@@ -41,6 +41,7 @@ const features = [
 
 export default function Home() {
   const [triageResult, setTriageResult] = useState<TriageOutput | null>(null);
+  const [workspaceKey, setWorkspaceKey] = useState(0);
 
   return (
     <>
@@ -166,7 +167,8 @@ export default function Home() {
             Triage Workspace
           </h2>
           <div className="glass p-6 sm:p-8">
-            <TriageWorkspace onResult={setTriageResult} />
+            {/* key forces full remount on New Triage — clears all input state */}
+            <TriageWorkspace key={workspaceKey} onResult={setTriageResult} />
           </div>
 
           {/* Results — HandoverCard + BystanderChecklist */}
@@ -174,7 +176,7 @@ export default function Home() {
             <div className="mt-8">
               <TriageResults
                 data={triageResult}
-                onReset={() => setTriageResult(null)}
+                onReset={() => { setTriageResult(null); setWorkspaceKey((k) => k + 1); }}
               />
             </div>
           )}

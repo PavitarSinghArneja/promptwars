@@ -34,6 +34,7 @@ RULES:
 5. Bystander actions must be numbered, plain English, and immediately actionable.
 6. recommendedSpecialty must be a valid ER specialty (e.g. "Trauma Surgery", "Cardiology", "Neurology", "General Emergency").
 7. confidence is a 0–100 integer reflecting how complete the input data is.
+8. CRITICAL — Use ONLY information explicitly present in the inputs. Never invent or assume patient names, ages, allergies, medications, or vitals that are not stated. If the name is "test" or a placeholder, output it exactly as given. Do NOT substitute real-sounding names.
 
 OUTPUT SCHEMA (strict — no extra fields):
 {

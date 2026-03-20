@@ -204,7 +204,7 @@ Confidence: ${data.confidence}%`;
               </div>
               <div className="flex justify-between">
                 <dt>Engine</dt>
-                <dd>Gemini 3 Flash</dd>
+                <dd>Gemini 2.5 Flash</dd>
               </div>
             </dl>
           </section>
