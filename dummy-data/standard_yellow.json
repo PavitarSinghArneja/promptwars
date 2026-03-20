@@ -1,0 +1,21 @@
+{
+  "name": "Robert Chen",
+  "age": 62,
+  "triageLevel": "Yellow",
+  "condition": "Moderate Respiratory Distress / Possible COVID/Flu",
+  "allergies": ["None"],
+  "medications": ["Amlodipine", "Aspirin"],
+  "vitals": {
+    "heartRate": 92,
+    "bloodPressure": "135/85",
+    "oxygenSaturation": "92%",
+    "respiratoryRate": 22
+  },
+  "actions": [
+    "Provide supplemental oxygen if available",
+    "Maintain upright sitting position",
+    "Keep patient hydrated",
+    "Isolate from other patients to prevent spread"
+  ],
+  "sourceContext": "Messy input: Photo of patient's medication list + voice note of patient coughing and wheezing."
+}

@@ -1,0 +1,21 @@
+{
+  "name": "John Doe",
+  "age": 45,
+  "triageLevel": "Red",
+  "condition": "Severe Anaphylaxis / Cardiac Arrest Risk",
+  "allergies": ["Peanuts", "Penicillin"],
+  "medications": ["Lipitor", "Metformin"],
+  "vitals": {
+    "heartRate": 130,
+    "bloodPressure": "85/55",
+    "oxygenSaturation": "88%",
+    "respiratoryRate": 28
+  },
+  "actions": [
+    "Administer Epipen immediately (Right Thigh)",
+    "Begin CPR if pulse is lost",
+    "Clear airway and place in recovery position",
+    "Prepare for intubation upon paramedic arrival"
+  ],
+  "sourceContext": "Messy input: Panicked voice note + blurry photo of peanut butter jar + patient gasping for air."
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Emily Watson",
+  "age": 10,
+  "triageLevel": "Green",
+  "condition": "Minor Laceration / Superficial Burn",
+  "allergies": ["Adhesive Tape"],
+  "medications": ["Multivitamins"],
+  "vitals": {
+    "heartRate": 80,
+    "bloodPressure": "100/65",
+    "oxygenSaturation": "99%",
+    "respiratoryRate": 16
+  },
+  "actions": [
+    "Clean wound with sterile saline",
+    "Apply non-adhesive dressing",
+    "Monitor for signs of infection (redness/heat)",
+    "Administer child-safe ibuprofen if pain persists"
+  ],
+  "sourceContext": "Messy input: Photo of a scraped knee + text from mother asking about tetanus shot history."
+}

@@ -1,0 +1,24 @@
+METRO HEALTH SYSTEMS
+DIAGNOSTIC REPORT - CONFIDENTIAL
+=================================
+
+PATIENT ID: 99x-5421
+NAME: DOE, JOHN A.
+DOB: 05/12/1979
+
+LAB RESULTS (2025-11-14):
+Glucose: 145 mg/dL (High)
+A1C: 7.2% (Evidence of Type 2 Diabetes)
+LDL: 160 mg/dL (Hyperlipidemia noted)
+
+PHYSICIAN NOTES:
+Patient has history of coronary artery disease. Currently stable on 10mg statin therapy. 
+Strict avoidance of:
+1. PENICILLIN (Grade 4 Anaphylaxis)
+2. TREE NUTS / PEANUTS
+
+Patient carries EpiPen at all times.
+
+----------------------------------------------------------
+Disclaimer: This is a diagnostic summary for ER reference.
+----------------------------------------------------------

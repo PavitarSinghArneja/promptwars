@@ -1,0 +1,21 @@
+{
+  "name": "Sarah Miller",
+  "age": 28,
+  "triageLevel": "Orange",
+  "condition": "Acute Appendicitis / Abdominal Trauma",
+  "allergies": ["Latex"],
+  "medications": ["Oral Contraceptives"],
+  "vitals": {
+    "heartRate": 105,
+    "bloodPressure": "110/75",
+    "oxygenSaturation": "96%",
+    "respiratoryRate": 20
+  },
+  "actions": [
+    "NPO (Nothing by mouth) - patient may need surgery",
+    "Monitor for localized rebound tenderness",
+    "Prepare for IV saline administration",
+    "Apply cold compress to abdomen"
+  ],
+  "sourceContext": "Messy input: Transcript of patient describing sharp pain in lower right quadrant + scan of old medical record indicating previous abdominal surgery."
+}
