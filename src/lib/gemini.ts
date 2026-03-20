@@ -2,6 +2,9 @@
  * Aegis Bridge — Gemini Client via Google Gen AI SDK (Vertex AI backend)
  * Uses @google/genai with vertexai:true — authenticates via GCP ADC on Cloud Run.
  * No API key needed in production; falls back to API key for local dev.
+ *
+ * IMPORTANT: MODEL_ID must stay "gemini-2.5-flash" — confirmed available on
+ * project sodium-sublime-490805-t9. Do NOT change it.
  */
 import { GoogleGenAI, type Part } from "@google/genai";
 import type { TriageOutput } from "./triageSchema";
@@ -9,19 +12,15 @@ import type { TriageOutput } from "./triageSchema";
 const PROJECT  = process.env.GOOGLE_CLOUD_PROJECT_ID ?? "sodium-sublime-490805-t9";
 const LOCATION = process.env.GOOGLE_CLOUD_REGION    ?? "us-central1";
 
-// Vertex AI on Cloud Run (ADC) — no API key needed
-// For local dev, set GOOGLE_GEMINI_API_KEY and the SDK uses AI Studio
 function getAI(): GoogleGenAI {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-  // If running on Cloud Run (no API key set or key is placeholder), use Vertex AI
   if (!apiKey || apiKey === "placeholder") {
     return new GoogleGenAI({ vertexai: true, project: PROJECT, location: LOCATION });
   }
-  // Local dev: use AI Studio key
   return new GoogleGenAI({ apiKey });
 }
 
-// Vertex AI model ID — confirmed available on this project
+// IMPORTANT: do not change this model ID — see file header comment
 const MODEL_ID = "gemini-2.5-flash";
 
 const SYSTEM_PROMPT = `You are Aegis Bridge, an expert emergency medical triage AI assistant.
@@ -66,6 +65,32 @@ export interface GeminiTriageInput {
   notes: string;
 }
 
+/** Extract only non-thinking text parts from a Gemini response candidate */
+function extractOutputText(response: Awaited<ReturnType<GoogleGenAI["models"]["generateContent"]>>): string {
+  // gemini-2.5-flash uses thinking mode by default on Vertex AI.
+  // Thinking parts have { thought: true } and must be excluded —
+  // they can consume the entire token budget before the JSON output is written.
+  const candidates = (response as unknown as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string; thought?: boolean }> } }>
+  }).candidates ?? [];
+
+  const outputParts = candidates[0]?.content?.parts ?? [];
+  const fromParts = outputParts
+    .filter((p) => !p.thought) // skip thinking tokens
+    .map((p) => p.text ?? "")
+    .join("")
+    .trim();
+
+  if (fromParts) return fromParts;
+
+  // Fallback: response.text getter (concatenates all parts including thinking)
+  try {
+    return (response.text ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
 export async function runTriageInference(input: GeminiTriageInput): Promise<TriageOutput> {
   const ai = getAI();
 
@@ -76,22 +101,12 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
   });
 
   for (const img of input.images) {
-    parts.push({
-      inlineData: {
-        data: img.base64,
-        mimeType: img.mimeType,
-      },
-    });
+    parts.push({ inlineData: { data: img.base64, mimeType: img.mimeType } });
     parts.push({ text: `Image file: ${img.name}` });
   }
 
   if (input.audio) {
-    parts.push({
-      inlineData: {
-        data: input.audio.base64,
-        mimeType: input.audio.mimeType,
-      },
-    });
+    parts.push({ inlineData: { data: input.audio.base64, mimeType: input.audio.mimeType } });
     parts.push({ text: `Audio recording: ${input.audio.durationSec}s. Transcribe and use as eyewitness/victim description.` });
   }
 
@@ -108,19 +123,21 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
       systemInstruction: SYSTEM_PROMPT,
       temperature: 0.1,
       topP: 0.8,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,   // increased: thinking mode was filling up 2048
+      // Disable thinking — not needed for structured JSON, and it consumed
+      // the entire token budget leaving no room for the actual JSON output.
+      thinkingConfig: { thinkingBudget: 0 },
     },
   });
 
-  // `text` is a getter property in @google/genai (not a function)
-  const rawText = (response.text ?? "").trim();
+  const rawText = extractOutputText(response);
+  console.log("[Gemini] raw output length:", rawText.length, "| first 120:", rawText.slice(0, 120));
 
-  // Robustly extract JSON: find first { and last } regardless of surrounding
-  // prose or markdown fences Gemini may prepend/append.
+  // Extract JSON object: find first { and last } regardless of surrounding prose/fences
   const start = rawText.indexOf("{");
   const end = rawText.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
-    throw new Error(`Gemini returned no JSON object: ${rawText.slice(0, 300)}`);
+    throw new Error(`Gemini returned no JSON object. Raw (first 400): ${rawText.slice(0, 400)}`);
   }
   const jsonText = rawText.slice(start, end + 1);
 
@@ -128,7 +145,7 @@ export async function runTriageInference(input: GeminiTriageInput): Promise<Tria
   try {
     parsed = JSON.parse(jsonText);
   } catch {
-    throw new Error(`Gemini JSON parse failed: ${jsonText.slice(0, 300)}`);
+    throw new Error(`Gemini JSON parse failed. Extracted (first 400): ${jsonText.slice(0, 400)}`);
   }
 
   if (!parsed.processedAt) {
