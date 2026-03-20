@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { ShieldAlert, Mic, ImageIcon, FileText, MapPin, ArrowRight } from "lucide-react";
 import TriageWorkspace from "@/components/TriageWorkspace";
+import TriageResults from "@/components/TriageResults";
 import type { TriageOutput } from "@/lib/triageSchema";
 
 const features = [
@@ -166,16 +167,13 @@ export default function Home() {
             <TriageWorkspace onResult={setTriageResult} />
           </div>
 
-          {/* Results placeholder — populated by Module 4 */}
+          {/* Results — HandoverCard + BystanderChecklist */}
           {triageResult && (
-            <div
-              role="status"
-              aria-live="polite"
-              aria-label="Triage result received"
-              className="mt-6 glass p-4 text-sm"
-              style={{ color: "var(--color-minor)" }}
-            >
-              ✓ Triage complete — triage level: {triageResult.triageLevel}. Output card renders below (Module 4).
+            <div className="mt-8">
+              <TriageResults
+                data={triageResult}
+                onReset={() => setTriageResult(null)}
+              />
             </div>
           )}
         </div>
