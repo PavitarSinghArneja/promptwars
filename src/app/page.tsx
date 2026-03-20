@@ -184,7 +184,7 @@ export default function Home() {
       </section>
 
       {/* Voice Guardian — floating, auto-shows for screen reader users */}
-      <VoiceGuardian onResult={(result) => { setTriageResult(result); }} />
+      <VoiceGuardian />
 
       {/* ── Hospital Map ───────────────────────────────────────── */}
       <section id="hospital-map" aria-labelledby="map-section-label" className="px-4 py-16 sm:px-6 lg:px-8">
