@@ -64,7 +64,7 @@ export default function RootLayout({
         >
           <p>
             Aegis Bridge &mdash; Powered by{" "}
-            <span aria-label="Google Vertex AI Gemini">Vertex AI Gemini 2.0 Flash</span>{" "}
+            <span aria-label="Google Vertex AI Gemini">Vertex AI Gemini 2.5 Flash</span>{" "}
             &amp; Firebase &bull; &copy; {new Date().getFullYear()}
           </p>
         </footer>

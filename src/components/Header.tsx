@@ -15,7 +15,7 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { user, loading, signInWithGoogle, signOutUser } = useAuth();
+  const { user, loading, authError, signInWithGoogle, signOutUser } = useAuth();
 
   return (
     <header
@@ -117,16 +117,28 @@ export default function Header() {
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={signInWithGoogle}
-                aria-label="Sign in with Google account"
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90 active:scale-95"
-                style={{ background: "var(--color-critical)", color: "#fff" }}
-              >
-                <LogIn size={14} aria-hidden="true" />
-                <span className="hidden sm:inline">Sign In</span>
-              </button>
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  type="button"
+                  onClick={signInWithGoogle}
+                  aria-label="Sign in with Google account"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90 active:scale-95"
+                  style={{ background: "var(--color-critical)", color: "#fff" }}
+                >
+                  <LogIn size={14} aria-hidden="true" />
+                  <span className="hidden sm:inline">Sign In</span>
+                </button>
+                {authError && (
+                  <p
+                    role="alert"
+                    className="text-xs max-w-48 text-right"
+                    style={{ color: "var(--color-urgent)" }}
+                    title={authError}
+                  >
+                    {authError.includes("auth/") ? "Auth error — check Firebase console" : authError.slice(0, 60)}
+                  </p>
+                )}
+              </div>
             )}
           </div>
 

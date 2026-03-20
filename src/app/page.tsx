@@ -93,7 +93,7 @@ export default function Home() {
         <p className="mt-6 text-lg sm:text-xl max-w-2xl" style={{ color: "var(--color-text-secondary)" }}>
           Aegis Bridge converts messy real-world inputs — voice, photos, medical notes —
           into structured, life-saving emergency actions. Powered by{" "}
-          <strong style={{ color: "var(--color-text-primary)" }}>Vertex AI Gemini 2.0 Flash</strong>.
+          <strong style={{ color: "var(--color-text-primary)" }}>Vertex AI Gemini 2.5 Flash</strong>.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">

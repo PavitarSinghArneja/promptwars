@@ -23,6 +23,7 @@ import { auth, googleProvider, isConfigured } from "./client";
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  authError: string | null;
   signInWithGoogle: () => Promise<void>;
   signOutUser: () => Promise<void>;
 }
@@ -30,6 +31,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: false,
+  authError: null,
   signInWithGoogle: async () => {},
   signOutUser: async () => {},
 });
@@ -37,6 +39,7 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(isConfigured);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isConfigured || !auth) {
@@ -51,8 +54,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
-    if (!isConfigured || !auth) return;
-    await signInWithPopup(auth, googleProvider);
+    if (!isConfigured || !auth) {
+      setAuthError("Authentication not configured.");
+      return;
+    }
+    try {
+      setAuthError(null);
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "";
+      // User closed popup — not an error worth showing
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return;
+      const msg = (err as { message?: string }).message ?? "Sign-in failed.";
+      setAuthError(msg);
+      console.error("[Firebase Auth]", code, msg);
+    }
   };
 
   const signOutUser = async () => {
@@ -61,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signOutUser }}>
+    <AuthContext.Provider value={{ user, loading, authError, signInWithGoogle, signOutUser }}>
       {children}
     </AuthContext.Provider>
   );
