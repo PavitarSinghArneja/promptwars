@@ -8,6 +8,7 @@ import { useState } from "react";
 import { ShieldAlert, Mic, ImageIcon, FileText, MapPin, ArrowRight } from "lucide-react";
 import TriageWorkspace from "@/components/TriageWorkspace";
 import TriageResults from "@/components/TriageResults";
+import HospitalMap from "@/components/HospitalMap";
 import type { TriageOutput } from "@/lib/triageSchema";
 
 const features = [
@@ -179,24 +180,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Hospital Map placeholder ───────────────────────────── */}
-      <section id="hospital-map" aria-labelledby="map-heading" className="px-4 py-16 sm:px-6 lg:px-8">
+      {/* ── Hospital Map ───────────────────────────────────────── */}
+      <section id="hospital-map" aria-labelledby="map-section-label" className="px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <h2
-            id="map-heading"
+            id="map-section-label"
             className="text-2xl font-bold mb-8"
             style={{ color: "var(--color-text-primary)" }}
           >
             Hospital Routing
           </h2>
-          <div
-            className="glass p-12 flex flex-col items-center justify-center text-center gap-4 min-h-64"
-            aria-label="Hospital map — loading in Module 5"
-          >
-            <MapPin size={32} style={{ color: "var(--color-text-muted)" }} aria-hidden="true" />
-            <p className="text-base" style={{ color: "var(--color-text-muted)" }}>
-              Google Maps hospital routing loads here (Module 5)
-            </p>
+          <div className="glass p-6">
+            <HospitalMap specialty={triageResult?.recommendedSpecialty} />
           </div>
         </div>
       </section>
