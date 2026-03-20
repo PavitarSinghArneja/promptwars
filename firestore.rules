@@ -3,7 +3,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // triageReports: authenticated users can only read/write their own records
+    // triageReports: both anonymous and signed-in users can write their own records.
+    // Firebase Anonymous Auth sets request.auth.uid, so request.auth != null covers both.
     match /triageReports/{reportId} {
       allow read, delete: if request.auth != null && resource.data.responderId == request.auth.uid;
       allow create: if request.auth != null

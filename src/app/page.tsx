@@ -9,6 +9,7 @@ import { ShieldAlert, Mic, ImageIcon, FileText, MapPin, ArrowRight } from "lucid
 import TriageWorkspace from "@/components/TriageWorkspace";
 import TriageResults from "@/components/TriageResults";
 import HospitalMap from "@/components/HospitalMap";
+import VoiceGuardian from "@/components/VoiceGuardian";
 import type { TriageOutput } from "@/lib/triageSchema";
 
 const features = [
@@ -179,6 +180,9 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Voice Guardian — floating, auto-shows for screen reader users */}
+      <VoiceGuardian onResult={(result) => { setTriageResult(result); }} />
 
       {/* ── Hospital Map ───────────────────────────────────────── */}
       <section id="hospital-map" aria-labelledby="map-section-label" className="px-4 py-16 sm:px-6 lg:px-8">

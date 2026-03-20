@@ -26,7 +26,10 @@ const isConfigured = Boolean(
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Firestore | null = null;
+
+// Google provider with drive.readonly scope for optional account linking
 const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope("https://www.googleapis.com/auth/drive.readonly");
 
 if (isConfigured) {
   app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];

@@ -2,9 +2,9 @@
 
 /**
  * Aegis Bridge — Site Header
- * Glassmorphism nav bar with Firebase Auth (Google Sign-In), semantic ARIA
+ * Anonymous-first: shows "Link Account" for anon users, avatar + sign-out for linked.
  */
-import { ShieldAlert, Activity, LogIn, LogOut, Loader2 } from "lucide-react";
+import { ShieldAlert, Activity, LogIn, LogOut, Loader2, Link2 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/firebase/AuthContext";
 
@@ -15,7 +15,7 @@ const navLinks = [
 ];
 
 export default function Header() {
-  const { user, loading, authError, signInWithGoogle, signOutUser } = useAuth();
+  const { user, loading, authError, isAnonymous, linkWithGoogle, signOutUser } = useAuth();
 
   return (
     <header
@@ -64,7 +64,7 @@ export default function Header() {
             </ul>
           </nav>
 
-          {/* Status indicator + auth */}
+          {/* Status + auth */}
           <div className="flex items-center gap-3">
             <div
               className="hidden sm:flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full"
@@ -80,14 +80,14 @@ export default function Header() {
               <span>Operational</span>
             </div>
 
-            {/* Auth button */}
             {loading ? (
               <div aria-label="Loading authentication state" role="status">
                 <Loader2 size={18} className="animate-spin" style={{ color: "var(--color-text-muted)" }} aria-hidden="true" />
               </div>
-            ) : user ? (
+
+            ) : user && !isAnonymous ? (
+              /* ── Linked Google account ── */
               <div className="flex items-center gap-2">
-                {/* User avatar */}
                 {user.photoURL ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -116,18 +116,30 @@ export default function Header() {
                   <span className="hidden sm:inline">Sign Out</span>
                 </button>
               </div>
+
             ) : (
+              /* ── Anonymous session — offer optional account link ── */
               <div className="flex flex-col items-end gap-1">
-                <button
-                  type="button"
-                  onClick={signInWithGoogle}
-                  aria-label="Sign in with Google account"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90 active:scale-95"
-                  style={{ background: "var(--color-critical)", color: "#fff" }}
-                >
-                  <LogIn size={14} aria-hidden="true" />
-                  <span className="hidden sm:inline">Sign In</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="hidden sm:inline text-xs px-2 py-1 rounded-full"
+                    style={{ background: "rgba(255,255,255,0.06)", color: "var(--color-text-muted)" }}
+                    aria-label="Currently using anonymous session"
+                  >
+                    Guest
+                  </span>
+                  <button
+                    type="button"
+                    onClick={linkWithGoogle}
+                    aria-label="Link Google account to save triage history and enable Drive access"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90 active:scale-95"
+                    style={{ background: "var(--color-accent)", color: "#fff" }}
+                  >
+                    <Link2 size={14} aria-hidden="true" />
+                    <span className="hidden sm:inline">Link Account</span>
+                    <LogIn size={14} className="sm:hidden" aria-hidden="true" />
+                  </button>
+                </div>
                 {authError && (
                   <p
                     role="alert"
